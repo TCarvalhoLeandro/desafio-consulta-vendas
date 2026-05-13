@@ -3,6 +3,7 @@ package com.devsuperior.dsmeta.services;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 
 import com.devsuperior.dsmeta.dto.SaleMinDTO;
 import com.devsuperior.dsmeta.dto.SaleReportMinDTO;
+import com.devsuperior.dsmeta.dto.SaleSummaryMinDTO;
 import com.devsuperior.dsmeta.entities.Sale;
+import com.devsuperior.dsmeta.projections.SaleSummaryMinProjection;
 import com.devsuperior.dsmeta.repositories.SaleRepository;
 
 @Service
@@ -27,29 +30,52 @@ public class SaleService {
 		return new SaleMinDTO(entity);
 	}
 	
-	public Page<SaleReportMinDTO>  findPaged(String minDate, String maxDate, String name, Pageable pageable){
-		LocalDate today;
+	// busca paginada
+	public Page<SaleReportMinDTO>  findReport(String minDate, String maxDate, String name, Pageable pageable){
+		LocalDate dataAtual;
 		if(maxDate == null || maxDate.trim().isEmpty()) {
-			today = LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault());
+			dataAtual = LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault());
 		}
 		else {
-			today = LocalDate.parse(maxDate);
+			dataAtual = LocalDate.parse(maxDate);
 		}
 		
-		LocalDate yesterday;
+		LocalDate dataAnterior;
 		if(minDate == null || minDate.trim().isEmpty()) {
-			yesterday = today.minusYears(1L);
+			dataAnterior = dataAtual.minusYears(1L);
 		}
 		else {
-			yesterday = LocalDate.parse(minDate);
+			dataAnterior = LocalDate.parse(minDate);
 		}
 		
 		if(name == null || name.trim().isEmpty()) {
 			name = "";
 		}
 		
-		Page<Sale> page = repository.searchReport(yesterday, today, name, pageable);
+		Page<Sale> page = repository.searchReport(dataAnterior, dataAtual, name, pageable);
 		return page.map(x -> new SaleReportMinDTO(x));
+	}
+	
+	// busca listagem
+	public List<SaleSummaryMinDTO> findSummary(String minDate, String maxDate){
+		LocalDate dataAtual;
+		if(maxDate == null || maxDate.trim().isEmpty()) {
+			dataAtual = LocalDate.ofInstant(Instant.now(), ZoneId.systemDefault());
+		}
+		else {
+			dataAtual = LocalDate.parse(maxDate);
+		}
 		
+		LocalDate dataAnterior;
+		if(minDate == null || minDate.trim().isEmpty()) {
+			dataAnterior = dataAtual.minusYears(1L);
+		}
+		else {
+			dataAnterior = LocalDate.parse(minDate);
+		}
+		
+		List<SaleSummaryMinProjection> list = repository.searchSummary(dataAnterior, dataAtual);
+		List<SaleSummaryMinDTO> result = list.stream().map(x -> new SaleSummaryMinDTO(x)).toList();
+		return result;
 	}
 }
